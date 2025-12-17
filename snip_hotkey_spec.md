@@ -105,7 +105,7 @@
   - 再度 F8 を押してもパスが入力されなくなる。
   - タスクマネージャーで「ウィンドウタイトル: snip_hotkey」の PowerShell（`pwsh.exe`）が消えている。
 - 再起動方法:
-  - `C:\Users\B1443kouda\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\snip_hotkey_start.vbs` をダブルクリックする。
+  - `C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\restart_snip_hotkey.cmd` をダブルクリックする。
 
 ## 5. 将来の改善候補
 
@@ -143,7 +143,7 @@
 
 ### 6.2 手動停止
 
-- 完全非表示で起動しているため、通常はウィンドウからは終了できない。停止したい場合は以下のいずれかを行う。
+- 最小化ウィンドウで起動しているため、通常はウィンドウ操作で終了しない。停止したい場合は以下のいずれかを行う。
 
 1. タスクマネージャーから:
    - `Ctrl+Shift+Esc` でタスクマネージャーを開く。
@@ -184,15 +184,16 @@
     - `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\snip_hotkey_start.cmd`
   - 内容（概略）:
     - `cd /d "C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey"`
+    - 既に「ウィンドウタイトル: snip_hotkey」の PowerShell がいれば起動せず終了
     - `start "snip_hotkey" /min pwsh -NoLogo -Command py snip_hotkey.py`
-- これにより、Windows ログオン時に最小化された PowerShell から `snip_hotkey.py` が常駐起動する。
+- これにより、Windows ログオン時に最小化された PowerShell から `snip_hotkey.py` が常駐起動する（重複起動を防止）。
 
 ### 8.2 手動再起動
 
 - F8 が効かなくなった場合の復旧方法:
   1. `C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey` にある
      `restart_snip_hotkey.cmd` をダブルクリックする。
-  2. これにより、既存の `pythonw.exe`/PowerShell を停止し、新たに `py snip_hotkey.py` を最小化ウィンドウで起動する。
+  2. これにより、「ウィンドウタイトル: snip_hotkey」の PowerShell だけを停止し、新たに `py snip_hotkey.py` を最小化ウィンドウで起動する。
 
 - ログ確認:
   - `snip_hotkey.log` の末尾（`Get-Content snip_hotkey.log -Tail 20`）を確認することで、
@@ -234,21 +235,14 @@
   - 現状の情報だけでは「どのアプリ／イベントがトリガーか」を特定しきれない。
 - そのため、`keyboard` ベースの F8 グローバルホットキーは、この環境では長時間の完全な安定運用は難しい。
 
-### 10.4 当面の運用と将来の移行案
-- 当面の運用
-  - F8 が効かなくなった場合は `restart_snip_hotkey.cmd` を実行し、最小化 `pwsh` + `py snip_hotkey.py` を再起動する。
-  - 再起動後も同様の症状が出た場合は、`snip_hotkey.log` と `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like ''*snip_hotkey.py*'' }` の結果を確認し、
-    - プロセス存否
-    - `F8 pressed` ログ有無
-    を併せて記録する。
-- 将来の移行案（推奨）
-  - F8 グローバルホットキーの実装を `keyboard` から切り離し、次のような構成に移行する:
-    - Windows ショートカット (`.lnk`) のホットキー、または AutoHotkey / 代替 PowerShell スクリプトで F8 を受ける。
-    - F8 押下時に `py snip_hotkey.py` を「ワンショット」で起動し、
-      - クリップボード画像の保存
-      - ファイルパスの自動入力
-      を Python にだけ任せる。
-  - こうすることで、グローバルフックの責務を OS 側に任せ、`keyboard` ライブラリの不安定さの影響を受けにくくする。
+### 10.4 当面の運用と将来の移行案（2025-12-17 更新）
+- 当面の運用（現状の暫定改善を前提）
+  - クリップボード取得を 0.1 秒×最大 5 回リトライするようにし、テキスト→画像切替直後の `None` を緩和済み。
+  - 起動時に既存の `snip_hotkey` PowerShell があれば再起動しないようスタートアップ CMD を修正し、タスクバー増殖を防止。
+  - それでも F8 が効かなくなった場合は `restart_snip_hotkey.cmd` で再起動し、`snip_hotkey.log` の `F8 pressed` 有無とプロセス存否を確認する。
+  - 長時間運用で再発するかは要観察（現状は「改善済み・様子見」）。
+- 将来の移行案（根本解決候補）
+  - F8 受け取りを OS 側（ショートカット/AutoHotkey/タスクスケジューラ等）に任せ、Python はワンショットで実行する方式に移行することで、`keyboard` のグローバルフック依存を排除する。
 
 ## 11. Codex CLI の入力行再描画に関する注意 (2025-11-25)
 
