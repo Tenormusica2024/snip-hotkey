@@ -16,4 +16,16 @@ Snipping Tool でコピーした画像を PNG に保存し、そのパス（引�
 ## 使い方
 1. Snipping Tool などで画像をコピー。
 2. Codex CLI の PowerShell をフォーカス。
-3. F8 を押すと、画像が `snips` に保存され、ファイルパスが PowerShell に自動入力される（見えない場合は矢印キー入力などで再描画）。***
+3. F8 を押すと、画像が `snips` に保存され、ファイルパスが PowerShell に自動入力される（見えない場合は矢印キー入力などで再描画）。
+
+## GitHub へアップするためにローカルへ取り込む手順（例）
+1. リポジトリの作業ディレクトリへ移動（例: `C:\Users\B1443kouda\Documents\git\<repo>`）。
+2. 必要ファイルをコピー:
+   - `copy \"C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\snip_hotkey.py\" .`
+   - `copy \"C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\README.md\" .`
+   - `copy \"C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\snip_hotkey_spec.md\" .`
+   - （必要なら `restart_snip_hotkey.cmd` もコピー）
+3. Git で add/commit/push:
+   - `git add snip_hotkey.py README.md snip_hotkey_spec.md restart_snip_hotkey.cmd`
+   - `git commit -m \"Add snip_hotkey tool\"`
+   - `git push`
