@@ -1,6 +1,8 @@
 import os
 import datetime
 import time
+import ctypes
+from ctypes import wintypes
 from pathlib import Path
 from PIL import ImageGrab
 import keyboard
@@ -12,6 +14,36 @@ DEFAULT_LOG_PATH = SCRIPT_DIR / "snip_hotkey.log"
 SAVE_DIR = Path(os.getenv("SNIP_HOTKEY_SAVE_DIR", str(DEFAULT_SAVE_DIR)))
 LOG_PATH = Path(os.getenv("SNIP_HOTKEY_LOG_PATH", str(DEFAULT_LOG_PATH)))
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Win32 hotkey constants
+MOD_NONE = 0x0000
+WM_HOTKEY = 0x0312
+VK_F8 = 0x77
+HOTKEY_ID = 1
+
+
+class MSG(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", wintypes.HWND),
+        ("message", wintypes.UINT),
+        ("wParam", wintypes.WPARAM),
+        ("lParam", wintypes.LPARAM),
+        ("time", wintypes.DWORD),
+        ("pt", wintypes.POINT),
+    ]
+
+
+# Win32 bindings
+user32 = ctypes.windll.user32
+GetMessageW = user32.GetMessageW
+GetMessageW.restype = wintypes.BOOL
+GetMessageW.argtypes = [ctypes.POINTER(MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+RegisterHotKey = user32.RegisterHotKey
+RegisterHotKey.restype = wintypes.BOOL
+RegisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.UINT, wintypes.UINT]
+UnregisterHotKey = user32.UnregisterHotKey
+UnregisterHotKey.restype = wintypes.BOOL
+UnregisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int]
 
 
 def log(message: str) -> None:
@@ -57,14 +89,30 @@ def save_clipboard_image():
 
 def main():
     log("snip_hotkey started (F8)")
+
+    if not RegisterHotKey(None, HOTKEY_ID, MOD_NONE, VK_F8):
+        log("RegisterHotKey failed (F8)")
+        return
+
+    log("hotkey registered (Win32)")
+    msg = MSG()
     try:
-        keyboard.add_hotkey("f8", save_clipboard_image)
-        log("hotkey registered")
-        keyboard.wait()
+        while True:
+            result = GetMessageW(ctypes.byref(msg), None, 0, 0)
+            if result == 0:
+                break  # WM_QUIT
+            if result == -1:
+                log("GetMessage failed")
+                break
+            if msg.message == WM_HOTKEY and msg.wParam == HOTKEY_ID:
+                save_clipboard_image()
     except KeyboardInterrupt:
         log("snip_hotkey stopped by KeyboardInterrupt")
     except Exception as e:
-        log(f"add_hotkey failed or runtime error: {e}")
+        log(f"runtime error: {e}")
+    finally:
+        UnregisterHotKey(None, HOTKEY_ID)
+        log("hotkey unregistered")
 
 
 if __name__ == "__main__":
