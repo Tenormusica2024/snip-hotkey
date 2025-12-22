@@ -8,10 +8,11 @@ Snipping Tool でコピーした画像を PNG に保存し、そのパス（引�
 - 画像取得は 0.1 秒刻みで最大 5 回リトライしてから保存
 - 入力するパスは `"C:\path\to\file.png"` のように引用符付きで送信
 - 詳細仕様: `snip_hotkey_spec.md`
+- ホットキー登録は Win32 `RegisterHotKey` を使用（長時間稼働でのフック切れを回避）
 
 ## 起動・再起動
-- 自動起動: スタートアップの `snip_hotkey_start.cmd` で最小化 PowerShell から `py snip_hotkey.py` を起動。
-- 手動再起動: `restart_snip_hotkey.cmd` をダブルクリック（ウィンドウタイトルが `snip_hotkey` の PowerShell だけを止めて再起動）。
+- 自動起動: スタートアップの `snip_hotkey_start.cmd` で非表示（pythonw）起動。
+- 手動再起動: `restart_snip_hotkey.cmd` をダブルクリック（既存の `snip_hotkey.py` プロセスを落として pythonw で非表示再起動）。
 
 ## 使い方
 1. Snipping Tool などで画像をコピー。
