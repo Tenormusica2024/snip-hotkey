@@ -19,8 +19,8 @@
 - 自動起動スクリプト（スタートアップ）
   - CMD ファイル:  
     - パス: `C:\Users\B1443kouda\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\snip_hotkey_start.cmd`
-    - 役割: Windows ログオン時に **最小化した PowerShell** で `py snip_hotkey.py` を起動する。
-  - 通常はスタートアップで自動起動するため、手動起動は不要（再起動は `restart_snip_hotkey.cmd` を利用）。
+    - 役割: Windows ログオン時に **非表示（pythonw）** で `pyw snip_hotkey.py` を起動する。
+  - 通常はスタートアップで自動起動するため、手動起動は不要（再起動は `restart_snip_hotkey.cmd` を利用）。再起動スクリプトは既存の `snip_hotkey.py` プロセスを停止し、pythonw で非表示再起動する。
 
 ## 3. 動作仕様
 
@@ -37,7 +37,8 @@
 
 - 依存ライブラリ
   - `Pillow` (`PIL.ImageGrab`)
-  - `keyboard`
+  - `keyboard`（パス入力に使用。ホットキーは Win32 API を使用）
+  - Win32 API への ctypes 呼び出し（`RegisterHotKey`/`GetMessageW`）
 
 - 定数
   - `SAVE_DIR` = `C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\snips`
@@ -45,10 +46,10 @@
 
 - ホットキー
   - 割り当て: `F8`
-  - 登録: `keyboard.add_hotkey("f8", save_clipboard_image)`
+  - 登録: Win32 `RegisterHotKey(None, id=1, MOD_NONE, VK_F8)`
   - 特徴:
-    - システム全体に対するグローバルホットキー。
-    - どのアプリがアクティブでも F8 押下で `save_clipboard_image()` が呼び出される。
+    - システム全体に対するグローバルホットキー（Win32 API ベースで長時間稼働時のフック切れを回避）。
+    - `GetMessageW` ループで WM_HOTKEY を受け取り、F8 押下時に `save_clipboard_image()` を実行する。
 
 - クリップボード処理
 - 関数: `save_clipboard_image()`
@@ -64,9 +65,9 @@
 - メインループ
   - 関数: `main()`
   - 処理:
-    - 起動メッセージを `print`。
-    - `keyboard.add_hotkey("f8", save_clipboard_image)` でホットキー登録。
-    - `keyboard.wait()` で無期限に待機（終了条件なし）。
+    - `RegisterHotKey` で F8 を登録し、失敗時はログに記録して終了。
+    - `GetMessageW` で WM_HOTKEY を待ち受け、F8 を受信したら `save_clipboard_image()` を呼び出す。
+    - `KeyboardInterrupt` や例外をログに記録し、最後に `UnregisterHotKey` する。
 
 ### 3.3 通常利用時のユーザー操作フロー
 
@@ -93,19 +94,15 @@
 
 ### 4.2 グローバルホットキーの競合
 
-- `keyboard` ライブラリはシステム全体のキーボードフックを使用する。
-- 他のソフトウェアが F8 をグローバルショートカットとして利用している場合、競合する可能性がある。
-- 問題が出た場合の対処例:
-  - 別のキー（`Ctrl+Alt+F8` など）に変更し、`keyboard.add_hotkey()` の引数を更新する。
+- Win32 `RegisterHotKey` を使用しているため、他アプリが同じキーを登録していると失敗する。
+- 失敗時はログに `RegisterHotKey failed (F8)` が残る。キーを変える場合は `VK_*` 定数と `RegisterHotKey` の引数を変更する。
 
 ### 4.3 エラー時の挙動
 
-- 現在の実装では、予期しない例外（ファイル書き込み失敗など）が発生した場合、プロセスが終了する可能性がある。
-- ただし、通常は以下で検知できる:
-  - 再度 F8 を押してもパスが入力されなくなる。
-  - タスクマネージャーで「ウィンドウタイトル: snip_hotkey」の PowerShell（`pwsh.exe`）が消えている。
+- 予期しない例外（ファイル書き込み失敗など）が発生した場合、プロセスが終了する可能性がある。ログにエラーメッセージが残る。
+- ホットキー登録に失敗した場合は `RegisterHotKey failed (F8)` が出る。
 - 再起動方法:
-  - `C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\restart_snip_hotkey.cmd` をダブルクリックする。
+  - `C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey\restart_snip_hotkey.cmd` をダブルクリックする（非表示で再起動）。
 
 ## 5. 将来の改善候補
 
