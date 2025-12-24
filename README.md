@@ -1,5 +1,7 @@
 # snip_hotkey
 
+**日本語** | [English](README_EN.md)
+
 Snipping Tool でコピーした画像を PNG に保存し、そのパス（引用符付き）をアクティブな PowerShell（Codex CLI）に自動入力する Windows 用ユーティリティ。
 
 - ホットキー: F8（グローバル）
