@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set SCRIPT_DIR=C:\Users\B1443kouda\Documents\Obsidian Vault\Codex\tools\snip_hotkey
+set SCRIPT_DIR=%~dp0
 cd /d "%SCRIPT_DIR%"
 
 :: stop existing snip_hotkey.py (python / pythonw) by command line match

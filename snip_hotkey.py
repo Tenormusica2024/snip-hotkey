@@ -8,7 +8,7 @@ from PIL import ImageGrab
 import keyboard
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_SAVE_DIR = SCRIPT_DIR.parent.parent / "snips"
+DEFAULT_SAVE_DIR = Path(os.path.expanduser("~")) / "Documents" / "snips"
 DEFAULT_LOG_PATH = SCRIPT_DIR / "snip_hotkey.log"
 
 SAVE_DIR = Path(os.getenv("SNIP_HOTKEY_SAVE_DIR", str(DEFAULT_SAVE_DIR)))
